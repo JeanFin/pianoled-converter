@@ -102,9 +102,10 @@ def read_musicxml(path: str | Path) -> Score:
             elif kind in {"backup", "forward"}:
                 duration = int(_text(item, "duration", "0") or 0)
                 delta = _ticks(duration, divisions, score.ticks_per_beat)
-                position += -delta if kind == "backup" else delta
-                if position < measure_start:
-                    raise ValueError("MusicXML backup moves before the measure start")
+                if kind == "backup":
+                    position = max(measure_start, position - delta)
+                else:
+                    position += delta
                 furthest = max(furthest, position)
             elif kind == "note":
                 duration_value = int(_text(item, "duration", "0") or 0)

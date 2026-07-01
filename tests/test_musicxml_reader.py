@@ -68,3 +68,31 @@ def test_reads_namespaced_metronome_rest_and_forward(tmp_path: Path) -> None:
     assert [(note.pitch, note.start, note.duration) for note in score.left_hand] == [
         (48, 1440, 480)
     ]
+
+
+def test_clamps_multiple_backups_to_measure_start(tmp_path: Path) -> None:
+    source = tmp_path / "dorico-backups.musicxml"
+    source.write_text(
+        """<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>144</divisions></attributes>
+    <note><rest measure="yes"/><duration>576</duration><staff>1</staff></note>
+    <backup><duration>288</duration></backup>
+    <direction><sound tempo="84"/></direction>
+    <backup><duration>576</duration></backup>
+    <note><pitch><step>C</step><octave>3</octave></pitch><duration>144</duration><staff>2</staff></note>
+    <note><pitch><step>D</step><octave>3</octave></pitch><duration>144</duration><staff>2</staff></note>
+  </measure></part>
+</score-partwise>
+""",
+        encoding="utf-8",
+    )
+
+    score = read_musicxml(source)
+
+    assert score.tempo_bpm == 84
+    assert [(note.pitch, note.start) for note in score.left_hand] == [
+        (48, 0),
+        (50, 480),
+    ]
